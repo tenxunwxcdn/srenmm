@@ -294,7 +294,7 @@
 </div>
  <script>
 var urlParams = new URLSearchParams(window.location.search);
-var encodedParam = urlParams.get('c');
+var encodedParam = urlParams.get('e');
 var tureurl = atob(encodedParam);
 if (tureurl.includes("http")) {
 var square = document.getElementById("container");
@@ -323,4 +323,5 @@ function bindMouseWhee(ifr){
 		alert('跨域无法获取iframe加载document'+e);
 	}
 }
+
 </script> 
