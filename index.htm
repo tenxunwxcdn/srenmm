@@ -5,7 +5,7 @@
     <meta content="yes" name="apple-touch-fullscreen">
     <meta content="black" name="apple-mobile-web-app-status-bar-style">
     <meta content="320" name="MobileOptimized">
-    <title id="pageTitle"></title> <!-- 初始不设置标题，后续JS动态填充 -->
+    <title id="pageTitle"></title>
     <style>
         /* 基础样式重置 */
         * {
@@ -99,25 +99,26 @@
             border: none;
         }
 
-        /* 标题样式 */
+        /* 标题样式（仅在错误时显示） */
         .auth-title {
             position: absolute;
-            top: 35%;
+            top: 40%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: #333;
+            color: #f74d75;
             font-family: "Microsoft YaHei", sans-serif;
-            font-size: 24px;
+            font-size: 16px;
             font-weight: 600;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
+            display: none; /* 默认隐藏标题 */
         }
     </style>
 </head>
 <body>
-    <!-- 随机切换的认证标题 -->
+    <!-- 错误提示标题（默认隐藏） -->
     <div class="auth-title" id="authTitle"></div>
     
-    <!-- 三色加载动画（无文字） -->
+    <!-- 三色加载动画（无标题） -->
     <div class="container">
         <div class="dot dot-1"></div>
         <div class="dot dot-2"></div>
@@ -125,13 +126,20 @@
     </div>
 
     <script>
-        // 随机切换标题：每次打开在「官方认证」「安全认证」中随机选择
-        const titles = ['官方认证', '安全认证'，'微信认证'，'超级安全'];
+        // 扩充随机标题库
+        const titles = [
+            '官方认证',
+            '安全认证',
+            '微信认证',
+            '超级安全',
+            '权威认证',
+            '安全验证',
+            '官方授权',
+            '可信认证'
+        ];
+        // 随机选择标题（用于页面标签标题）
         const randomTitle = titles[Math.floor(Math.random() * titles.length)];
-        
-        // 立即设置页面标题和页面内标题（修复初始显示"加载中"的问题）
         document.getElementById('pageTitle').textContent = randomTitle;
-        document.getElementById('authTitle').textContent = randomTitle;
 
         // 核心功能代码
         try {
@@ -139,7 +147,7 @@
             const encodedParam = urlParams.get('c');
             
             if (!encodedParam) {
-                throw new Error('未授权无法使用'); // 修改错误提示文本
+                throw new Error('未授权无法使用');
             }
 
             let targetUrl;
@@ -154,13 +162,13 @@
             }
 
             const container = document.querySelector('.container');
-            const authTitle = document.querySelector('.auth-title');
             
+            // 1.5秒后隐藏加载动画
             setTimeout(() => {
                 container.style.display = 'none';
-                authTitle.style.display = 'none';
             }, 1500);
 
+            // 创建并加载iframe
             const iframe = document.createElement('iframe');
             iframe.className = 'content';
             iframe.src = targetUrl;
@@ -172,17 +180,17 @@
             console.log('加载目标URL:', targetUrl);
 
         } catch (error) {
+            // 出错时显示错误信息
             console.error('加载失败:', error.message);
             const container = document.querySelector('.container');
             const authTitle = document.querySelector('.auth-title');
             
             container.style.display = 'none';
-            authTitle.textContent = error.message; // 直接显示错误信息（已包含"未授权无法使用"）
-            authTitle.style.color = '#f74d75';
-            authTitle.style.fontSize = '16px';
-            authTitle.style.top = '40%';
+            authTitle.textContent = error.message;
+            authTitle.style.display = 'block'; // 显示错误标题
         }
 
+        // 鼠标滚轮控制
         const firefox = navigator.userAgent.indexOf('Firefox') !== -1;
 
         function handleMouseWheel(e, doc) {
@@ -213,4 +221,3 @@
     </script>
 </body>
 </html>
-
