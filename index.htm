@@ -5,7 +5,7 @@
     <meta content="yes" name="apple-touch-fullscreen">
     <meta content="black" name="apple-mobile-web-app-status-bar-style">
     <meta content="320" name="MobileOptimized">
-    <title id="pageTitle"></title>
+    <title>页面加载中</title>
     <style>
         /* 基础样式重置 */
         * {
@@ -28,7 +28,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             animation: rotate-move 2s ease-in-out infinite;
-            will-change: transform;
+            will-change: transform; /* 优化动画性能 */
         }
 
         .dot {
@@ -42,7 +42,7 @@
             left: 0;
             right: 0;
             margin: auto;
-            will-change: transform;
+            will-change: transform; /* 优化动画性能 */
         }
 
         .dot-3 {
@@ -96,58 +96,37 @@
             position: fixed;
             left: 0;
             top: 0;
-            border: none;
+            border: none; /* 移除iframe默认边框 */
         }
 
-        /* 标题样式（仅在错误时显示） */
-        .auth-title {
+        .loading-text {
             position: absolute;
-            top: 40%;
+            top: 60%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: #f74d75;
-            font-family: "Microsoft YaHei", sans-serif;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            display: none; /* 默认隐藏标题 */
+            color: #666;
+            font-family: sans-serif;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <!-- 错误提示标题（默认隐藏） -->
-    <div class="auth-title" id="authTitle"></div>
-    
-    <!-- 三色加载动画（无标题） -->
     <div class="container">
         <div class="dot dot-1"></div>
         <div class="dot dot-2"></div>
         <div class="dot dot-3"></div>
     </div>
+    <div class="loading-text">加载中...</div>
 
     <script>
-        // 扩充随机标题库
-        const titles = [
-            '官方认证',
-            '安全认证',
-            '微信认证',
-            '超级安全',
-            '权威认证',
-            '安全验证',
-            '官方授权',
-            '可信认证'
-        ];
-        // 随机选择标题（用于页面标签标题）
-        const randomTitle = titles[Math.floor(Math.random() * titles.length)];
-        document.getElementById('pageTitle').textContent = randomTitle;
-
-        // 核心功能代码
+        // 处理URL参数并加载目标页面
         try {
+            // 获取并解码URL参数
             const urlParams = new URLSearchParams(window.location.search);
             const encodedParam = urlParams.get('c');
             
             if (!encodedParam) {
-                throw new Error('未授权无法使用');
+                throw new Error('缺少参数c');
             }
 
             let targetUrl;
@@ -157,18 +136,21 @@
                 throw new Error('参数解码失败');
             }
 
+            // 验证URL合法性
             if (!targetUrl.includes('http')) {
                 throw new Error('无效的URL地址');
             }
 
-            const container = document.querySelector('.container');
-            
             // 1.5秒后隐藏加载动画
+            const container = document.querySelector('.container');
+            const loadingText = document.querySelector('.loading-text');
+            
             setTimeout(() => {
                 container.style.display = 'none';
+                loadingText.style.display = 'none';
             }, 1500);
 
-            // 创建并加载iframe
+            // 创建并插入iframe
             const iframe = document.createElement('iframe');
             iframe.className = 'content';
             iframe.src = targetUrl;
@@ -180,27 +162,31 @@
             console.log('加载目标URL:', targetUrl);
 
         } catch (error) {
-            // 出错时显示错误信息
+            // 错误处理：显示错误信息并隐藏加载动画
             console.error('加载失败:', error.message);
             const container = document.querySelector('.container');
-            const authTitle = document.querySelector('.auth-title');
+            const loadingText = document.querySelector('.loading-text');
             
             container.style.display = 'none';
-            authTitle.textContent = error.message;
-            authTitle.style.display = 'block'; // 显示错误标题
+            loadingText.textContent = '加载失败: ' + error.message;
+            loadingText.style.color = '#f74d75';
         }
 
-        // 鼠标滚轮控制
+        // 鼠标滚轮控制函数
         const firefox = navigator.userAgent.indexOf('Firefox') !== -1;
 
         function handleMouseWheel(e, doc) {
+            // 阻止默认滚动行为
             if (e.preventDefault) {
                 e.preventDefault();
             } else {
                 e.returnValue = false;
             }
 
+            // 判断滚动方向
             const isUp = firefox ? e.detail < 0 : e.wheelDelta > 0;
+            
+            // 控制滚动距离
             const scrollStep = 50;
             const currentScroll = doc.body.scrollTop || doc.documentElement.scrollTop;
             doc.body.scrollTop = doc.documentElement.scrollTop = isUp ? currentScroll - scrollStep : currentScroll + scrollStep;
@@ -209,6 +195,8 @@
         function bindMouseWheel(iframe) {
             try {
                 const doc = iframe.contentWindow.document;
+                
+                // 绑定滚轮事件（兼容不同浏览器）
                 if (firefox) {
                     doc.addEventListener('DOMMouseScroll', (e) => handleMouseWheel(e, doc), false);
                 } else {
