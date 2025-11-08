@@ -5,8 +5,9 @@
     <meta content="yes" name="apple-touch-fullscreen">
     <meta content="black" name="apple-mobile-web-app-status-bar-style">
     <meta content="320" name="MobileOptimized">
-    <title>加载中...</title>
+    <title id="pageTitle">加载中</title>
     <style>
+        /* 基础样式重置 */
         * {
             margin: 0;
             padding: 0;
@@ -17,14 +18,13 @@
             background-color: #f5f5f5;
             overflow: hidden;
             height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
         .container {
             width: 100px;
             height: 100px;
             position: absolute;
-            top: 45%;
+            top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             animation: rotate-move 2s ease-in-out infinite;
@@ -35,6 +35,7 @@
             width: 15px;
             height: 15px;
             border-radius: 50%;
+            background-color: #000;
             position: absolute;
             top: 0;
             bottom: 0;
@@ -98,45 +99,41 @@
             border: none;
         }
 
-        .loading-info {
+        /* 标题样式 */
+        .auth-title {
             position: absolute;
-            top: 60%;
+            top: 35%;
             left: 50%;
             transform: translate(-50%, -50%);
-            text-align: center;
-            width: 80%;
-            max-width: 400px;
-        }
-
-        .loading-text {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
-
-        .target-title {
             color: #333;
-            font-size: 16px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            padding: 0 10px;
+            font-family: "Microsoft YaHei", sans-serif;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 2px;
         }
     </style>
 </head>
 <body>
+    <!-- 随机切换的认证标题 -->
+    <div class="auth-title" id="authTitle"></div>
+    
+    <!-- 三色加载动画（无文字） -->
     <div class="container">
         <div class="dot dot-1"></div>
         <div class="dot dot-2"></div>
         <div class="dot dot-3"></div>
     </div>
-    <div class="loading-info">
-        <div class="loading-text">正在跳转到以下页面...</div>
-        <div class="target-title">加载中，请稍候...</div>
-    </div>
 
     <script>
-        // 处理URL参数并加载目标页面
+        // 随机切换标题：每次打开在「官方认证」「安全认证」中随机选择
+        const titles = ['官方认证', '安全认证'];
+        const randomTitle = titles[Math.floor(Math.random() * titles.length)];
+        
+        // 设置页面标题和页面内标题
+        document.getElementById('pageTitle').textContent = randomTitle;
+        document.getElementById('authTitle').textContent = randomTitle;
+
+        // 原有核心功能代码（未改动）
         try {
             const urlParams = new URLSearchParams(window.location.search);
             const encodedParam = urlParams.get('c');
@@ -156,67 +153,36 @@
                 throw new Error('无效的URL地址');
             }
 
-            // 更新页面标题为加载状态
-            document.title = '加载中...';
-            
-            // 获取DOM元素
             const container = document.querySelector('.container');
-            const loadingInfo = document.querySelector('.loading-info');
-            const targetTitleEl = document.querySelector('.target-title');
+            const authTitle = document.querySelector('.auth-title');
+            
+            setTimeout(() => {
+                container.style.display = 'none';
+                authTitle.style.display = 'none';
+            }, 1500);
 
-            // 创建并插入iframe
             const iframe = document.createElement('iframe');
             iframe.className = 'content';
             iframe.src = targetUrl;
-            iframe.style.display = 'none'; // 初始隐藏iframe
-            
-            // 监听iframe加载事件获取标题
             iframe.onload = function() {
-                try {
-                    // 尝试获取目标页面标题
-                    let targetTitle = '未知页面';
-                    if (this.contentWindow && this.contentWindow.document) {
-                        targetTitle = this.contentWindow.document.title || targetTitle;
-                        // 更新当前页面标题
-                        document.title = targetTitle;
-                    }
-                    // 更新显示的标题
-                    targetTitleEl.textContent = targetTitle;
-                    
-                    // 绑定鼠标滚轮事件
-                    bindMouseWheel(this);
-                    
-                } catch (e) {
-                    console.warn('跨域限制，无法获取页面标题:', e.message);
-                }
+                bindMouseWheel(this);
             };
-            
             document.body.appendChild(iframe);
-
-            // 1.5秒后隐藏加载动画，显示iframe
-            setTimeout(() => {
-                container.style.display = 'none';
-                loadingInfo.style.display = 'none';
-                iframe.style.display = 'block';
-            }, 1500);
 
             console.log('加载目标URL:', targetUrl);
 
         } catch (error) {
             console.error('加载失败:', error.message);
             const container = document.querySelector('.container');
-            const loadingText = document.querySelector('.loading-text');
-            const targetTitleEl = document.querySelector('.target-title');
+            const authTitle = document.querySelector('.auth-title');
             
             container.style.display = 'none';
-            loadingText.textContent = '加载失败';
-            loadingText.style.color = '#f74d75';
-            targetTitleEl.textContent = error.message;
-            targetTitleEl.style.color = '#f74d75';
-            document.title = '加载失败';
+            authTitle.textContent = '加载失败: ' + error.message;
+            authTitle.style.color = '#f74d75';
+            authTitle.style.fontSize = '16px';
+            authTitle.style.top = '40%';
         }
 
-        // 鼠标滚轮控制函数
         const firefox = navigator.userAgent.indexOf('Firefox') !== -1;
 
         function handleMouseWheel(e, doc) {
@@ -235,7 +201,6 @@
         function bindMouseWheel(iframe) {
             try {
                 const doc = iframe.contentWindow.document;
-                
                 if (firefox) {
                     doc.addEventListener('DOMMouseScroll', (e) => handleMouseWheel(e, doc), false);
                 } else {
