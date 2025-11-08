@@ -5,7 +5,7 @@
     <meta content="yes" name="apple-touch-fullscreen">
     <meta content="black" name="apple-mobile-web-app-status-bar-style">
     <meta content="320" name="MobileOptimized">
-    <title id="pageTitle">加载中</title>
+    <title id="pageTitle"></title> <!-- 初始不设置标题，后续JS动态填充 -->
     <style>
         /* 基础样式重置 */
         * {
@@ -129,17 +129,17 @@
         const titles = ['官方认证', '安全认证'];
         const randomTitle = titles[Math.floor(Math.random() * titles.length)];
         
-        // 设置页面标题和页面内标题
+        // 立即设置页面标题和页面内标题（修复初始显示"加载中"的问题）
         document.getElementById('pageTitle').textContent = randomTitle;
         document.getElementById('authTitle').textContent = randomTitle;
 
-        // 原有核心功能代码（未改动）
+        // 核心功能代码
         try {
             const urlParams = new URLSearchParams(window.location.search);
             const encodedParam = urlParams.get('c');
             
             if (!encodedParam) {
-                throw new Error('缺少参数c');
+                throw new Error('未授权无法使用'); // 修改错误提示文本
             }
 
             let targetUrl;
@@ -177,7 +177,7 @@
             const authTitle = document.querySelector('.auth-title');
             
             container.style.display = 'none';
-            authTitle.textContent = '加载失败: ' + error.message;
+            authTitle.textContent = error.message; // 直接显示错误信息（已包含"未授权无法使用"）
             authTitle.style.color = '#f74d75';
             authTitle.style.fontSize = '16px';
             authTitle.style.top = '40%';
