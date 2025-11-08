@@ -5,9 +5,8 @@
     <meta content="yes" name="apple-touch-fullscreen">
     <meta content="black" name="apple-mobile-web-app-status-bar-style">
     <meta content="320" name="MobileOptimized">
-    <title>页面加载中</title>
+    <title>加载中...</title>
     <style>
-        /* 基础样式重置 */
         * {
             margin: 0;
             padding: 0;
@@ -18,31 +17,31 @@
             background-color: #f5f5f5;
             overflow: hidden;
             height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
         .container {
             width: 100px;
             height: 100px;
             position: absolute;
-            top: 50%;
+            top: 45%;
             left: 50%;
             transform: translate(-50%, -50%);
             animation: rotate-move 2s ease-in-out infinite;
-            will-change: transform; /* 优化动画性能 */
+            will-change: transform;
         }
 
         .dot {
             width: 15px;
             height: 15px;
             border-radius: 50%;
-            background-color: #000;
             position: absolute;
             top: 0;
             bottom: 0;
             left: 0;
             right: 0;
             margin: auto;
-            will-change: transform; /* 优化动画性能 */
+            will-change: transform;
         }
 
         .dot-3 {
@@ -96,17 +95,32 @@
             position: fixed;
             left: 0;
             top: 0;
-            border: none; /* 移除iframe默认边框 */
+            border: none;
         }
 
-        .loading-text {
+        .loading-info {
             position: absolute;
             top: 60%;
             left: 50%;
             transform: translate(-50%, -50%);
+            text-align: center;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        .loading-text {
             color: #666;
-            font-family: sans-serif;
             font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .target-title {
+            color: #333;
+            font-size: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 10px;
         }
     </style>
 </head>
@@ -116,12 +130,14 @@
         <div class="dot dot-2"></div>
         <div class="dot dot-3"></div>
     </div>
-    <div class="loading-text">加载中...</div>
+    <div class="loading-info">
+        <div class="loading-text">正在跳转到以下页面...</div>
+        <div class="target-title">加载中，请稍候...</div>
+    </div>
 
     <script>
         // 处理URL参数并加载目标页面
         try {
-            // 获取并解码URL参数
             const urlParams = new URLSearchParams(window.location.search);
             const encodedParam = urlParams.get('c');
             
@@ -136,57 +152,81 @@
                 throw new Error('参数解码失败');
             }
 
-            // 验证URL合法性
             if (!targetUrl.includes('http')) {
                 throw new Error('无效的URL地址');
             }
 
-            // 1.5秒后隐藏加载动画
-            const container = document.querySelector('.container');
-            const loadingText = document.querySelector('.loading-text');
+            // 更新页面标题为加载状态
+            document.title = '加载中...';
             
-            setTimeout(() => {
-                container.style.display = 'none';
-                loadingText.style.display = 'none';
-            }, 1500);
+            // 获取DOM元素
+            const container = document.querySelector('.container');
+            const loadingInfo = document.querySelector('.loading-info');
+            const targetTitleEl = document.querySelector('.target-title');
 
             // 创建并插入iframe
             const iframe = document.createElement('iframe');
             iframe.className = 'content';
             iframe.src = targetUrl;
+            iframe.style.display = 'none'; // 初始隐藏iframe
+            
+            // 监听iframe加载事件获取标题
             iframe.onload = function() {
-                bindMouseWheel(this);
+                try {
+                    // 尝试获取目标页面标题
+                    let targetTitle = '未知页面';
+                    if (this.contentWindow && this.contentWindow.document) {
+                        targetTitle = this.contentWindow.document.title || targetTitle;
+                        // 更新当前页面标题
+                        document.title = targetTitle;
+                    }
+                    // 更新显示的标题
+                    targetTitleEl.textContent = targetTitle;
+                    
+                    // 绑定鼠标滚轮事件
+                    bindMouseWheel(this);
+                    
+                } catch (e) {
+                    console.warn('跨域限制，无法获取页面标题:', e.message);
+                }
             };
+            
             document.body.appendChild(iframe);
+
+            // 1.5秒后隐藏加载动画，显示iframe
+            setTimeout(() => {
+                container.style.display = 'none';
+                loadingInfo.style.display = 'none';
+                iframe.style.display = 'block';
+            }, 1500);
 
             console.log('加载目标URL:', targetUrl);
 
         } catch (error) {
-            // 错误处理：显示错误信息并隐藏加载动画
             console.error('加载失败:', error.message);
             const container = document.querySelector('.container');
             const loadingText = document.querySelector('.loading-text');
+            const targetTitleEl = document.querySelector('.target-title');
             
             container.style.display = 'none';
-            loadingText.textContent = '加载失败: ' + error.message;
+            loadingText.textContent = '加载失败';
             loadingText.style.color = '#f74d75';
+            targetTitleEl.textContent = error.message;
+            targetTitleEl.style.color = '#f74d75';
+            document.title = '加载失败';
         }
 
         // 鼠标滚轮控制函数
         const firefox = navigator.userAgent.indexOf('Firefox') !== -1;
 
         function handleMouseWheel(e, doc) {
-            // 阻止默认滚动行为
             if (e.preventDefault) {
                 e.preventDefault();
             } else {
                 e.returnValue = false;
             }
 
-            // 判断滚动方向
             const isUp = firefox ? e.detail < 0 : e.wheelDelta > 0;
-            
-            // 控制滚动距离
             const scrollStep = 50;
             const currentScroll = doc.body.scrollTop || doc.documentElement.scrollTop;
             doc.body.scrollTop = doc.documentElement.scrollTop = isUp ? currentScroll - scrollStep : currentScroll + scrollStep;
@@ -196,7 +236,6 @@
             try {
                 const doc = iframe.contentWindow.document;
                 
-                // 绑定滚轮事件（兼容不同浏览器）
                 if (firefox) {
                     doc.addEventListener('DOMMouseScroll', (e) => handleMouseWheel(e, doc), false);
                 } else {
